@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Gallery",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/example",
+      "console": "debugConsole"
+    },
+    {
+      "name": "Tests",
+      "request": "launch",
+      "type": "dart",
+      "program": "test/",
+      "console": "debugConsole",
+      "args": [
+        "--reporter=expanded"
+      ]
+    }
+  ]
+}

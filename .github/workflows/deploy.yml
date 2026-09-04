@@ -1,0 +1,30 @@
+name: Publish
+
+# pub.dev publishing through OIDC, with no secret in this repository.
+#
+# Before the tag trigger is enabled: publish the first version by hand, then turn on automated
+# publishing for the package on pub.dev with the tag pattern `v{{version}}`, then uncomment
+# the trigger below.
+on:
+  workflow_dispatch:
+  # push:
+  #   tags:
+  #     - "v[0-9]+.[0-9]+.[0-9]+*"
+
+jobs:
+  publish:
+    permissions:
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      # Obtains the pub.dev OIDC token; Flutter's pub reads the same token file.
+      - uses: dart-lang/setup-dart@v1
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter pub publish --force

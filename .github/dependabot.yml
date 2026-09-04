@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      pub:
+        update-types: ["minor", "patch"]
+  # The gallery resolves on its own, so its dependencies are invisible to the directory above.
+  - package-ecosystem: "pub"
+    directory: "/example"
+    schedule:
+      interval: "weekly"
+    groups:
+      pub:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

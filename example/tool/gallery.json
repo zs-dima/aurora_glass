@@ -1,0 +1,19 @@
+{
+  "$comment": "The gallery's identity for `aurora_glass:gen_brand`. It borrows the BS axis because the design canvas is drawn in it. Regenerate: dart run aurora_glass:gen_brand --design-root <design>/tokens --app-json tool/gallery.json --out lib/gallery_tokens.g.dart",
+
+  "displayName": "Aurora Glass Gallery",
+
+  "tokens": {
+    "designApp": "BS",
+    "accentRoles": {
+      "#FFC163": "pairStart",
+      "#FFD79A": "accentHover",
+      "#FF8E6E": "pairEnd",
+      "#F0CFA0": "sandTint"
+    },
+    "innerFills": {
+      "rgba(26,18,32,0.92)": "gradientCardInner",
+      "rgba(30,20,14,0.6)": "selectedTileInner"
+    }
+  }
+}
