@@ -1,22 +1,20 @@
 {
-  // The gallery is a separate app in `example/`, resolved on its own, so its entry point is given
-  // as a path from this folder rather than through `cwd`.
+  // For when this folder is opened on its own. The kit's own `.vscode/launch.json` one level up
+  // runs the same app when the repository root is the workspace folder.
   "version": "0.2.0",
   "configurations": [
     {
       "name": "Gallery",
       "request": "launch",
       "type": "dart",
-      "program": "example/lib/main.dart",
-      "cwd": "${workspaceFolder}/example",
+      "program": "lib/main.dart",
       "console": "debugConsole"
     },
     {
       "name": "Gallery (Windows)",
       "request": "launch",
       "type": "dart",
-      "program": "example/lib/main.dart",
-      "cwd": "${workspaceFolder}/example",
+      "program": "lib/main.dart",
       "deviceId": "windows",
       "console": "debugConsole"
     },
@@ -24,9 +22,16 @@
       "name": "Gallery (Chrome)",
       "request": "launch",
       "type": "dart",
-      "program": "example/lib/main.dart",
-      "cwd": "${workspaceFolder}/example",
+      "program": "lib/main.dart",
       "deviceId": "chrome",
+      "console": "debugConsole"
+    },
+    {
+      "name": "Gallery (profile)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "program": "lib/main.dart",
       "console": "debugConsole"
     },
     {
