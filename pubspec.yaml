@@ -29,31 +29,24 @@ executables:
 
 environment:
   sdk: ^3.13.2
-  # The kit uses `WidgetStateInputBorder`, `Durations`/`Easing` and dot-shorthand enum syntax.
   flutter: ">=3.47.2"
 
 dependencies:
   flutter:
     sdk: flutter
 
+  # TODO
   # Pure-Dart QR encoder (the matrix only; the painting is ours, so the code can be styled like
   # the rest of the kit instead of being a black rectangle dropped on the Aurora chassis).
-  # v3, not v4: `pdf` -> `barcode` pins qr ^3 in at least one consuming app and the two cannot
-  # coexist. Revisit when barcode releases against qr 4.
+  # v3, not v4: `pdf` -> `barcode` pins qr ^3 in at least one consuming app and the two cannot coexist.
+  # Revisit when barcode releases against qr 4.
   qr: ^3.0.2
-
-  # That is the whole list, verified against imports: flutter + qr. An earlier version carried
-  # intl/control/rxdart/uuid/collection/characters/meta with ZERO imports between them, and each
-  # was a weekly Dependabot PR in every repository that depended on this one.
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  lints_tool:
-    git:
-      url: https://github.com/zs-dima/lints_tool.git
-      ref: v1.0.1
+  lints_tool: ^1.0.1
 
 flutter:
   uses-material-design: true
@@ -63,8 +56,7 @@ flutter:
     - packages/aurora_glass/shaders/ai/progress.frag
 
   fonts:
-    # Icons are a FONT, not per-file SVGs. An app's own glyphs go in its own family, not in this
-    # one; otherwise every app ships every other app's icons.
+    # An app's own glyphs go in its own family, not in this one; otherwise every app ships every other app's icons.
     - family: icons
       fonts:
         - asset: packages/aurora_glass/fonts/icons.ttf

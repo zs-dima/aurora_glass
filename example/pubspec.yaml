@@ -4,9 +4,7 @@ publish_to: "none"
 
 version: 1.0.0+1
 
-# Deliberately resolved on its own rather than as part of anything: the gallery reaches the kit
-# through its published surface, the same way a consuming app does, and its own platform matrix is
-# what proves the kit renders everywhere (line ARCHITECTURE §UI Kit).
+# Deliberately resolved on its own rather than as part of anything.
 
 environment:
   sdk: ^3.13.2
