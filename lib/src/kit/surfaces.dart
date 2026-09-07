@@ -194,10 +194,18 @@ class ListRow extends StatelessWidget {
 /// The overline above a group of content: 12/w700, capitals, +14% tracking.
 class SectionLabel extends StatelessWidget {
   /// Creates a [SectionLabel].
-  const SectionLabel(this.text, {super.key});
+  const SectionLabel(this.text, {this.maxLines, super.key});
 
   /// Label text; rendered upper-case with Unicode default casing.
   final String text;
+
+  /// Cap on rendered lines; the label ellipsizes past it. Null lets it wrap freely, as before.
+  ///
+  /// A section label normally owns its line and should wrap — a translation that needs two lines
+  /// gets two. It is when the label SHARES a row that wrapping is wrong: on a header line beside a
+  /// back arrow and a trailing value, a second line pushes the row's height out and reads as a
+  /// mistake rather than as a translation. Callers in that position pass 1.
+  final int? maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -205,6 +213,8 @@ class SectionLabel extends StatelessWidget {
     final base = theme.textTheme.labelSmall;
     return Text(
       text.toUpperCase(),
+      maxLines: maxLines,
+      overflow: maxLines == null ? null : TextOverflow.ellipsis,
       style: base?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
         fontWeight: .w700,
