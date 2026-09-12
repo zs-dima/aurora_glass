@@ -2,7 +2,7 @@
 name: aurora_glass
 description: "The Aurora Glass design system for Flutter: tokens, adaptive layer, theme and kit components, with the app's palette passed in."
 
-version: 0.1.2
+version: 0.1.4
 
 homepage: https://github.com/zs-dima/aurora_glass
 repository: https://github.com/zs-dima/aurora_glass
