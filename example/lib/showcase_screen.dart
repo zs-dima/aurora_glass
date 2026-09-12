@@ -35,6 +35,14 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
+                ScreenHeader.headline(
+                  back: AppBackButton(
+                    onPressed: () {},
+                  ),
+                  child: Text('Settings', style: theme.textTheme.headlineSmall),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
                 const _Section('Buttons'),
                 PrimaryPill(label: 'PrimaryPill h58', onPressed: _disabled ? null : () {}),
                 const SizedBox(height: AppSpacing.xs),

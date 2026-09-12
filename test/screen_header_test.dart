@@ -183,22 +183,47 @@ void main() {
     });
   });
 
-  testWidgets('the headline form wraps beside the arrow instead of dragging it down', (tester) async {
-    await pump(
-      tester,
-      ScreenHeader.headline(
-        back: back(),
-        child: const Text('Разблокируйте отчёт для сантехника прямо сейчас'),
-      ),
-      textScale: 2,
-    );
+  /// **The headline form's two halves are one rule, so they are tested as a pair.** The slot is
+  /// floored at the band's height: a title that fits has room to be centred in, and one that has
+  /// wrapped has none, which leaves it at the top where the row's `.start` meets it. Neither case
+  /// is a branch in the widget, so a test that only covered one would not notice the other break.
+  group('the headline against the arrow', () {
+    testWidgets("**one line sits on the arrow's centre line**, not above it", (tester) async {
+      // The headline form kept `crossAxisAlignment: .start` after the overline form was fixed, so a
+      // ~28 px title's TOP met a 48 px button whose glyph sits at y≈24, and the title came out
+      // roughly ten pixels high of the arrow on every screen whose name is the first thing said.
+      await pump(tester, ScreenHeader.headline(back: back(), child: const Text('Settings')));
 
-    expect(tester.takeException(), isNull);
-    expect(
-      tester.getTopLeft(find.byType(IconButton)).dy,
-      lessThanOrEqualTo(tester.getTopLeft(find.byType(Text)).dy + 1),
-      reason: 'the arrow stays at the top of the band; the words wrap beside it',
-    );
+      expect(tester.getSize(find.byType(ScreenHeader)).height, equals(AppTarget.tap));
+      expect(
+        tester.getCenter(find.text('Settings')).dy,
+        closeTo(tester.getCenter(find.byType(Icon)).dy, 1),
+        reason: "the band is the arrow's 48 dp target and a one-line title has to sit in the middle of it",
+      );
+    });
+
+    testWidgets('one that outgrows the band wraps beside the arrow instead of dragging it down', (tester) async {
+      await pump(
+        tester,
+        ScreenHeader.headline(
+          back: back(),
+          child: const Text('Разблокируйте отчёт для сантехника прямо сейчас'),
+        ),
+        textScale: 2,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byType(ScreenHeader)).height,
+        greaterThan(AppTarget.tap),
+        reason: 'the case under test is a headline the band cannot hold',
+      );
+      expect(
+        tester.getTopLeft(find.byType(Text)).dy,
+        closeTo(tester.getTopLeft(find.byType(IconButton)).dy, 1),
+        reason: 'no room left to centre in, so the words start at the arrow and grow downward past it',
+      );
+    });
   });
 }
 

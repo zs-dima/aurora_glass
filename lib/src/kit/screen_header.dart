@@ -114,12 +114,15 @@ class ScreenHeader extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: AppTarget.tap),
         child: Row(
           spacing: AppSpacing.xs,
-          // A headline that needs three lines at 2.0× wraps BESIDE the arrow rather than dragging
-          // it down the screen with it.
           crossAxisAlignment: .start,
           children: <Widget>[
             ?back,
-            Expanded(child: headline),
+            Expanded(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: AppTarget.tap),
+                child: Align(alignment: AlignmentDirectional.centerStart, heightFactor: 1, child: headline),
+              ),
+            ),
           ],
         ),
       );
