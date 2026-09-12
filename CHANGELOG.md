@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **`LabelWithValue` stopped guessing whether a label and its value fit, and asks the layout.** It
+  stacked them past a text scale of 1.3 — a threshold that knows the scale and nothing about the
+  label's translated length, the value's width or the phone's. Below it the label was squeezed to
+  whatever the value left and ellipsised; above it a pair that fitted a tablet was stacked anyway.
+  It is a `Wrap` now: beside while both fit, beneath once they do not, decided by the widths
+  actually on screen. The 160 px cap stays only where there is no label to protect and no line to
+  drop to — a value standing alone.
+
+  **Layout tests that assert which line the pair lands on need a real font.** `flutter_test` draws
+  every glyph as a square of the font size, about 1.7× wider than the face that ships, so a pair
+  that sits side by side on a 360 pt phone stacks under the test font. What holds in every font is
+  that the label keeps its words and nothing overflows; the sharing question is asked here, where
+  the font is known.
+
+## [0.1.3] - 2026-09-12
+
+### Fixed
+
+- A one-line `ScreenHeader.headline` sat at the top of the 48 dp band instead of on the arrow's
+  centre line. It is centred within the band now, and a headline that outgrows it still wraps
+  beside the arrow rather than dragging it down the screen.
+- A value stacked under its label was held to the trailing slot's 160 px cap, where it has the
+  whole width — a status pill wrapped to three lines and pushed the screen under it 35 px past the
+  bottom at 2.0× in Russian.
+
 ## [0.1.2] - 2026-09-12
 
 **The parts four apps of the line each wrote for themselves.** A component that lives in four repos

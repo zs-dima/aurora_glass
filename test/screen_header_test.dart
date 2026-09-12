@@ -199,16 +199,16 @@ void main() {
       // whatever was left and ellipsised it; above it, it stacked a pair that fitted perfectly
       // well on a tablet. This pair does not fit a 360 pt phone at 1.0x, and the label is nowhere
       // near long enough to be cut on its own.
-      await pump(tester, ScreenHeader(label: 'Where is it loudest', trailing: 'Aug 29', back: back()));
+      await pump(tester, ScreenHeader(label: 'Where is louder', trailing: 'Aug 29', back: back()));
 
       expect(tester.takeException(), isNull);
       expect(
         tester.getCenter(find.text('Aug 29')).dy,
-        greaterThan(tester.getCenter(find.text('WHERE IS IT LOUDEST')).dy),
+        greaterThan(tester.getCenter(find.text('WHERE IS LOUDER')).dy),
         reason: 'the value takes its own line rather than the label taking an ellipsis',
       );
       expect(
-        tester.renderObject<RenderParagraph>(find.text('WHERE IS IT LOUDEST')).didExceedMaxLines,
+        tester.renderObject<RenderParagraph>(find.text('WHERE IS LOUDER')).didExceedMaxLines,
         isFalse,
         reason: 'and the label keeps its words: nothing squeezed it to make room',
       );
