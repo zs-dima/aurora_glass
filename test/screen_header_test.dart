@@ -59,23 +59,29 @@ void main() {
     });
 
     testWidgets('**a short value takes the room it needs and no more**', (tester) async {
-      // A `Flexible` around the value defaults to flex 1, the same as the label's `Expanded`, so
+      // A `Flexible` around the value defaulted to flex 1, the same as the label's `Expanded`, so
       // the two split the free space evenly: a six-character value took half the row and a label
       // that fits twice over came out ellipsised.
-      await pump(tester, ScreenHeader(label: 'Where is it loudest?', trailing: '5 spots', back: back()));
+      await pump(tester, ScreenHeader(label: 'Hunt', trailing: '5 spots', back: back()));
 
       // **The property, not a width.** Every measured width here is an artefact of the test's
-      // square-glyph font, so what is asserted is the layout rule: the value takes what it needs
-      // and the label is given ALL the rest. Under the bug the two shared the free space evenly,
-      // so the label got half of it whatever the value's own width was.
-      final row = tester.getSize(find.byType(ScreenHeader)).width;
-      final value = tester.getSize(find.text('5 spots')).width;
-      final label = tester.getSize(find.text('WHERE IS IT LOUDEST?')).width;
+      // square-glyph font, so what is asserted is the layout rule: the value is as wide as its own
+      // words and sits at the far edge, and the label starts at the near one. Under the bug the
+      // value took half the free space whatever its own words needed.
+      final header = tester.getRect(find.byType(ScreenHeader));
+      final value = tester.getRect(find.text('5 spots'));
+      final label = tester.getRect(find.text('HUNT'));
 
+      expect(value.right, closeTo(header.right, 1), reason: 'the value belongs at the end of the row');
       expect(
-        label,
-        closeTo(row - AppTarget.tap - AppSpacing.xs * 2 - value, 1),
-        reason: 'the arrow, two gaps and the value are the only things taken off the label',
+        label.left,
+        closeTo(header.left + AppTarget.tap + AppSpacing.xs, 1),
+        reason: 'and the label at the start of what the arrow left',
+      );
+      expect(
+        value.width,
+        lessThan(header.width / 3),
+        reason: 'seven characters, not a third of the row — which is what an even split handed it',
       );
     });
 
@@ -143,14 +149,16 @@ void main() {
   });
 
   group('the trailing slot', () {
-    testWidgets('a pill in the widget slot is bounded, so its own maxLines can bite', (tester) async {
-      // An unbounded slot lets a pill lay out at its natural width: `maxLines` never fires, and
-      // the row overflows instead of the label ellipsizing.
+    testWidgets('**a pill that no longer fits beside the label drops below it**, uncapped', (tester) async {
+      // The cap used to be the slot's contract: it stopped a value squeezing the label out of the
+      // row they shared. Nothing squeezes anything now — a value that does not fit takes its own
+      // line — and capping it there only made a pill wrap to three lines and push the screen under
+      // it 35 px past the bottom in Russian (2026-09-12).
       await pump(
         tester,
         ScreenHeader(
           label: 'Сохранено три точки',
-          trailingWidget: const StatusPill(label: 'Запись', tone: .alert, maxLines: 1),
+          trailingWidget: const StatusPill(label: 'Запись идёт прямо сейчас', tone: .alert),
           back: back(),
         ),
         textScale: 2,
@@ -158,13 +166,32 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(
+        tester.getCenter(find.byType(StatusPill)).dy,
+        greaterThan(tester.getCenter(find.text('СОХРАНЕНО ТРИ ТОЧКИ')).dy),
+      );
+      expect(
         tester.getSize(find.byType(StatusPill)).width,
-        lessThanOrEqualTo(AppTarget.trailingMax),
-        reason: "the cap is the slot's contract, not the caller's",
+        greaterThan(AppTarget.trailingMax),
+        reason: 'on its own line the value is given the width it has rather than a row cap',
       );
     });
 
-    testWidgets('past the one-row scale the value drops UNDER the label, not into it', (tester) async {
+    testWidgets('a value with no label to share with is capped all the same', (tester) async {
+      // The one slot that still needs the cap: there is no label to protect and no line to drop
+      // to, so an unbounded pill would lay out at its natural width and overflow the row.
+      await pump(
+        tester,
+        ScreenHeader(
+          trailingWidget: const StatusPill(label: 'Запись идёт прямо сейчас', tone: .alert, maxLines: 1),
+          back: back(),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(tester.getSize(find.byType(StatusPill)).width, lessThanOrEqualTo(AppTarget.trailingMax));
+    });
+
+    testWidgets('once it no longer fits, the value drops UNDER the label, not into it', (tester) async {
       await pump(tester, ScreenHeader(label: 'Hunt', trailing: 'Aug 29', back: back()), textScale: 2);
 
       expect(tester.getCenter(find.text('Aug 29')).dy, greaterThan(tester.getCenter(find.text('HUNT')).dy));

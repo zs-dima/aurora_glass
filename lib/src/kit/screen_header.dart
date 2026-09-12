@@ -177,12 +177,17 @@ class ScreenHeader extends StatelessWidget {
 ///
 /// **The rule lives here because two kinds of place need it**: a screen header, and a card that
 /// carries the same pair. The arrow is a fixed 48, a date or a chip is a fixed width at a given
-/// text size, and a translated label is not — so past a certain scale the label's `Expanded` is
-/// already at zero and the row overflows. No amount of ellipsis saves it, because the thing that
-/// does not fit is not the thing that can shrink.
+/// text size, and a translated label is not — so there is always a row where the two no longer
+/// share a line, and no amount of ellipsis saves it, because the thing that does not fit is not
+/// the thing that can shrink.
 ///
-/// The choice is made on the SCALER rather than by measuring: cheap, deterministic, and it cannot
-/// depend on which language happened to be on screen when somebody looked.
+/// **"Once they stop fitting" is a layout question, so the layout answers it.** It used to be
+/// guessed from the text scaler, which knows nothing about either width: on a 360 pt phone, with
+/// the value at its old 160 px cap, the label was handed exactly 88 px — the leftover after the
+/// arrow and two gaps — at EVERY scale up to the threshold, however long the translation was, and
+/// then 256 px one hundredth of a scale step later. A [Wrap] asks the only question that decides
+/// it — do these two, at these widths, in this language, fit this row — and it asks it of the
+/// widths actually on screen.
 class LabelWithValue extends StatelessWidget {
   /// Creates a [LabelWithValue].
   const LabelWithValue({this.label, this.value, super.key});
@@ -209,30 +214,22 @@ class LabelWithValue extends StatelessWidget {
         child: _Capped(child: value!),
       );
     if (value == null) return _Heading(text);
-    return MediaQuery.textScalerOf(context).scale(1) > _kOneRowScale
-        ? Column(
-            crossAxisAlignment: .start,
-            spacing: AppSpacing.xs,
-            children: <Widget>[
-              _Heading(text),
-              _Capped(child: value),
-            ],
-          )
-        : Row(
-            spacing: AppSpacing.xs,
-            children: <Widget>[
-              // The label yields and the value does not: at a given text size a date is a fixed
-              // width and a translated label is not, so squeezing the wrong one is what would put
-              // the line break back.
-              Expanded(child: _Heading(text)),
-              // **Not `Flexible`.** It defaults to flex 1, the same as the label's `Expanded`, so
-              // the two split the free space evenly and a short value took half the row — "WHERE
-              // IS IT LOUD…" beside "5 spots" on a 390 pt phone (2026-09-12). The `ConstrainedBox`
-              // inside `_Capped` is already a bounded width, which is all a `StatusPill`'s own
-              // `maxLines` needs to bite.
-              _Capped(child: value),
-            ],
-          );
+
+    // **The rule IS a wrap, so it is one.** Beside while both fit, beneath once they stop —
+    // decided by the widths actually on screen, which is the only thing that can answer it: the
+    // label is a translation and the value is a date or a pill, and whether the two fit is a fact
+    // about this row in this language, not about the text scale.
+    //
+    // [WrapAlignment.spaceBetween] is what keeps the value at the far edge while the pair share a
+    // line, and puts the label at the start once they do not — a run of one has nothing to space.
+    return Wrap(
+      alignment: .spaceBetween,
+      // A date or a pill against the overline reads as one optical line.
+      crossAxisAlignment: .center,
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: <Widget>[_Heading(text), value],
+    );
   }
 }
 
@@ -250,8 +247,13 @@ class _Heading extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(header: true, child: SectionLabel(text, maxLines: 1));
 }
 
-/// The cap is the SLOT's contract, not the caller's: a value that grows past it is what breaks the
-/// line, and a caller cannot know how much room a translated label needed.
+/// The cap on a value that has no label beside it.
+///
+/// **This is the last place that needs one.** The cap used to guard the shared row — a value that
+/// grew past it squeezed the label out — but a [Wrap] moves the value to its own line instead of
+/// squeezing anything, so capping it there only made a status pill wrap to three lines and pushed
+/// the screen under it 35 px past the bottom at 2.0× in Russian (2026-09-12). A value standing
+/// alone has no label to protect and nothing to wrap to, so it keeps the bound.
 class _Capped extends StatelessWidget {
   const _Capped({required this.child});
 
@@ -263,10 +265,3 @@ class _Capped extends StatelessWidget {
     child: child,
   );
 }
-
-/// The largest text scale a label and its value still fit on one row at.
-///
-/// Measured, not chosen: at 2.0× the row wants more than a 360 pt phone gives it, and 1.3× clears
-/// it in four languages. Set below the first failing scale rather than at it, because the failure
-/// was measured in English and the label is a translation.
-const double _kOneRowScale = 1.3;

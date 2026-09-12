@@ -180,9 +180,12 @@ class InfoBanner extends StatelessWidget {
             // nothing, and the row overflowed anyway — one app grew a private wrapper widget for the
             // sole purpose of avoiding this banner (2026-09-12).
             //
-            // The choice is made on the SCALER and not by measuring, the same rule and the same
-            // threshold [LabelWithValue] uses: cheap, deterministic, and it cannot depend on which
-            // language happened to be on screen when somebody looked.
+            // **The choice is made on the SCALER, and here that is the honest way to make it.**
+            // [LabelWithValue] asks a [Wrap] the same question instead, because a label has a width
+            // of its own and either fits beside the value or does not. A MESSAGE has no such width:
+            // it is a paragraph, it is meant to wrap inside its own column, and its unwrapped width
+            // is longer than any row — so a [Wrap] would break it onto a second line every time,
+            // at every scale, and the action would never sit beside it at all.
             Expanded(
               child: switch ((action, MediaQuery.textScalerOf(context).scale(1) > _kBannerOneRowScale)) {
                 (null, _) => Text(message, style: Theme.of(context).textTheme.bodyMedium),
@@ -234,6 +237,7 @@ class _BannerAction extends StatelessWidget {
 
 /// The largest text scale a banner's message and its action still fit on one row at.
 ///
-/// The same 1.3 [LabelWithValue] uses, measured the same way: at 2.0× on a 320 dp phone a Russian
-/// message beside an action wants about 55 px more than the row has.
+/// Measured, not chosen: at 2.0× on a 320 dp phone a Russian message beside an action wants about
+/// 55 px more than the row has. A threshold rather than a fit test because a message is a
+/// paragraph — see the note at the branch itself for why the row cannot be asked instead.
 const double _kBannerOneRowScale = 1.3;
