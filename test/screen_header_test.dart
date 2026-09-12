@@ -1,5 +1,6 @@
 import 'package:aurora_glass/aurora_glass.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 
 import '_fixture/test_palette.dart';
@@ -189,6 +190,28 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(tester.getSize(find.byType(StatusPill)).width, lessThanOrEqualTo(AppTarget.trailingMax));
+    });
+
+    testWidgets('**and it drops at 1.0x too, which is the case a text scale cannot see**', (tester) async {
+      // The case the old rule got backwards. It stacked on a THRESHOLD — "past 1.3x, assume they
+      // no longer fit" — which knows the text scale and nothing about the label's translated
+      // length, the value's width or the phone's. Below the threshold it squeezed the label to
+      // whatever was left and ellipsised it; above it, it stacked a pair that fitted perfectly
+      // well on a tablet. This pair does not fit a 360 pt phone at 1.0x, and the label is nowhere
+      // near long enough to be cut on its own.
+      await pump(tester, ScreenHeader(label: 'Where is it loudest', trailing: 'Aug 29', back: back()));
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getCenter(find.text('Aug 29')).dy,
+        greaterThan(tester.getCenter(find.text('WHERE IS IT LOUDEST')).dy),
+        reason: 'the value takes its own line rather than the label taking an ellipsis',
+      );
+      expect(
+        tester.renderObject<RenderParagraph>(find.text('WHERE IS IT LOUDEST')).didExceedMaxLines,
+        isFalse,
+        reason: 'and the label keeps its words: nothing squeezed it to make room',
+      );
     });
 
     testWidgets('once it no longer fits, the value drops UNDER the label, not into it', (tester) async {
