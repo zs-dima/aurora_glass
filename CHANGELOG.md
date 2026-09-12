@@ -5,7 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.5] - 2026-09-12
+
+### Added
+
+- **`SliverScreenHeader` — the screen's name and its way back stop scrolling away.** A header
+  written as the first row of a list is gone after 48 px of scroll, and the arrow with it; on
+  gesture-nav Android and on iOS that is the only visible way back there is. It is a
+  `PinnedHeaderSliver`, not a `SliverPersistentHeader`: a delegate has to declare
+  `minExtent`/`maxExtent` as context-free getters, and this band is a MINIMUM (`AppTarget.tap`)
+  that grows with the text scale and again when `LabelWithValue` wraps — a fixed extent would clip
+  exactly the case that wrap exists for.
+
+  **It paints `AppBackground`, and that is what makes it invisible.** Rows have to be hidden as
+  they pass under it, and over this gradient no flat colour can do that. Measured on a shipped
+  390×844 render, the band a header occupies runs `#0d142e` at the leading edge, `#2e2b5c` two
+  thirds across and `#171a3a` at the trailing edge — a 46-level swing — and steps another ~13
+  levels at its lower edge, because `AppGlow.primaryTop` of -150 against `AppGlow.primarySize` of
+  430 puts the upper glow's centre at y≈65, inside the band. The slice is laid out against the
+  window and anchored to its top, where the sliver already sits, so it is pixel-identical to what
+  it covers — which is why there is no scroll listener and no cross-fade: there is nothing to fade
+  in. **It carries `ScreenHeader`'s own constructors**, so a call site does not nest one inside
+  it: `SliverScreenHeader(back: …, label: …)` and `SliverScreenHeader.headline(back: …, child: …)`
+  read the way the unpinned versions do, and `.custom` takes a header this kit did not write — a
+  home screen's app name beside its two doors is not a `ScreenHeader` and is still the thing that
+  must not scroll away. A `.headline` pins like any other: a screen whose title IS the first thing
+  it says loses its way back exactly as fast as one with an overline. The pane under it passes
+  `top: false`.
+
+- **`AppBackground`** — the 165° base gradient and the two radial glows, extracted from
+  `AppScaffold` so a second thing can paint them. `AppScaffold` composes it and renders identically,
+  which a test asserts by comparing the two rasters byte for byte.
+
+- **`ContentPane(bottom:)`** — false for a column that is not at the bottom of the window, so a
+  pinned header's band does not carry the gesture bar's inset at the TOP of the screen.
+
+- **`PaneWidth`** — the width a pane gives its content, published by `ListDetail` and read by
+  `SliverContentPane`. `SliverPadding` needs its inset before layout runs, so a sliver pane cannot
+  measure itself the way `ContentPane` does; it has to be told. Until now `SliverContentPane` fell
+  back to the WINDOW, so a 560 dp list pane in a 1024 dp window computed the window's centring —
+  236 dp a side — and left its content 88 dp wide. Every call site inside a `ListDetail` is now
+  right by default; `availableWidth` stays for a scrollable somewhere neither describes.
+
+### Fixed
+
+- **A header's trailing value is readable.** It was drawn in `outline`, the tone
+  `color_contrast_test` excludes on the grounds that "the muted tone never carries information" —
+  and this slot carries nothing else: a count, a date, a status. Measured on a dark palette over the
+  app's own gradient it is 3.43:1 at 12 px, under AA, and it shows wherever a long title makes the
+  pair wrap and the value lands over the darkest corner instead of the glow. It takes
+  `onSurfaceVariant` now, the role the palette guarantees and the one `SectionLabel` beside it
+  already uses; the letter-spaced upper case is what separates the two, not the colour.
+
+## [0.1.4] - 2026-09-12
 
 ### Changed
 

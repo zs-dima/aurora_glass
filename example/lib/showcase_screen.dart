@@ -24,7 +24,17 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
     return AppScaffold(
       child: CustomScrollView(
         slivers: <Widget>[
+          // **The gallery wears it.** A pinned header is the one part you cannot judge from a
+          // still: what matters is that the rows vanish into it rather than through it, and that
+          // it keeps its height when the text grows. Scroll this page in both themes.
+          SliverScreenHeader(
+            label: 'Aurora Glass',
+            trailing: theme.brightness.name,
+            back: AppBackButton(onPressed: () {}),
+          ),
           SliverContentPane(
+            // The header above already took the status bar.
+            top: false,
             sliver: SliverList.list(
               children: <Widget>[
                 const SizedBox(height: AppSpacing.lg),
@@ -83,6 +93,8 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
                   ),
 
                 const _Section('Headers: one row, at the back arrow height'),
+                // The pinned one is the bar at the top of this page — SliverScreenHeader.
+
                 const ScreenHeader(label: 'Screen header', trailing: 'Aug 29', back: BackButton()),
                 const ScreenHeader(
                   label: 'With a widget value',

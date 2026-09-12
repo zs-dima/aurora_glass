@@ -16,7 +16,7 @@ import 'package:flutter/rendering.dart';
 /// rotation keeps every scroll offset, focus node and animation below.
 class ContentPane extends StatelessWidget {
   /// Creates a [ContentPane].
-  const ContentPane({required this.child, super.key});
+  const ContentPane({required this.child, this.bottom = true, super.key});
 
   /// The column's insets at [availableWidth]: `(available - ceiling) / 2 + screenPadding`, floored
   /// at the padding. An unbounded width gets the padding alone.
@@ -34,19 +34,46 @@ class ContentPane extends StatelessWidget {
   /// The content.
   final Widget child;
 
+  /// Whether the safe area's bottom inset is applied here.
+  ///
+  /// False for a pane that is not at the bottom of the window — a pinned header's column, which
+  /// would otherwise carry the gesture bar's inset under a 48 dp band at the TOP of the screen.
+  final bool bottom;
+
   @override
   Widget build(BuildContext context) => SafeArea(
+    bottom: bottom,
     child: _ContentInsets(dimens: AppDimens.of(context), child: child),
   );
 }
 
+/// The width a pane gives its content, for the slivers inside it.
+///
+/// [SliverPadding] needs its inset before layout runs, so a sliver pane cannot measure itself the
+/// way [ContentPane] does; it has to be TOLD. `ListDetail` publishes its pane width here so that
+/// every [SliverContentPane] inside it is right by default. Without it a 560 dp pane in a 1024 dp
+/// window computed the window's centring — 236 dp a side — and left its content 88 dp wide.
+class PaneWidth extends InheritedWidget {
+  /// Creates a [PaneWidth].
+  const PaneWidth({required this.width, required super.child, super.key});
+
+  /// The width of the closest enclosing pane, or null when the pane IS the window.
+  static double? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<PaneWidth>()?.width;
+
+  /// The width available to content inside this pane.
+  final double width;
+
+  @override
+  bool updateShouldNotify(PaneWidth oldWidget) => width != oldWidget.width;
+}
+
 /// The content column applied to a sliver, where a scrolling screen's insets belong.
 ///
-/// A pinned [SliverAppBar] placed outside this stays full-bleed. A pane under one passes
-/// `top: false`, or the status bar is counted twice.
+/// A pinned header placed outside this stays full-bleed — which is what `SliverScreenHeader` is —
+/// and a pane under one passes `top: false`, or the status bar is counted twice.
 ///
-/// The column is computed against the window's width. A scrollable in a narrower pane, such as
-/// the list half of a `ListDetail`, passes [availableWidth].
+/// The column is computed against the enclosing [PaneWidth], or the window when there is none. A
+/// scrollable somewhere neither describes passes [availableWidth] itself.
 class SliverContentPane extends StatelessWidget {
   /// Creates a [SliverContentPane].
   const SliverContentPane({
@@ -66,7 +93,7 @@ class SliverContentPane extends StatelessWidget {
   /// Whether the safe area's bottom inset is applied here.
   final bool bottom;
 
-  /// The width to compute the column against; the window's when null.
+  /// The width to compute the column against; the enclosing [PaneWidth] or the window when null.
   final double? availableWidth;
 
   @override
@@ -74,7 +101,10 @@ class SliverContentPane extends StatelessWidget {
     top: top,
     bottom: bottom,
     sliver: SliverPadding(
-      padding: ContentPane.insetsFor(AppDimens.of(context), availableWidth ?? MediaQuery.maybeWidthOf(context)),
+      padding: ContentPane.insetsFor(
+        AppDimens.of(context),
+        availableWidth ?? PaneWidth.maybeOf(context) ?? MediaQuery.maybeWidthOf(context),
+      ),
       sliver: sliver,
     ),
   );

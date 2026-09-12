@@ -149,6 +149,22 @@ void main() {
     });
   });
 
+  group('the value is readable', () {
+    testWidgets('**the trailing value takes a role the palette guarantees**, not the muted one', (tester) async {
+      await pump(tester, ScreenHeader(label: 'Spots', trailing: '6 spots', back: back()));
+
+      final context = tester.element(find.byType(ScreenHeader));
+      final rendered = tester.renderObject<RenderParagraph>(find.text('6 spots'));
+
+      // `outline` is excluded from `color_contrast_test` because "the muted tone never carries
+      // information" — and this slot carries a count, a date or a status. On a dark palette over
+      // the app's own gradient it measured 3.43:1 at 12 px, under AA, wherever the pair wraps and
+      // the value lands over the darkest corner instead of the glow.
+      expect(rendered.text.style?.color, equals(Theme.of(context).colorScheme.onSurfaceVariant));
+      expect(rendered.text.style?.color, isNot(Theme.of(context).colorScheme.outline));
+    });
+  });
+
   group('the trailing slot', () {
     testWidgets('**a pill that no longer fits beside the label drops below it**, uncapped', (tester) async {
       // The cap used to be the slot's contract: it stopped a value squeezing the label out of the

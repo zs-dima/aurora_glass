@@ -76,12 +76,16 @@ ink on the CTA gradient, are hand-written in the app; they live only in each boa
   the floor), `WindowSizeScope`, `AppResponsiveTheme`, `ListDetail`, `ContentPane`, and
   `UserTextScaler`, which composes an in-app text multiplier over the OS curve instead of
   flattening it.
-- **Components**: `AppScaffold`, the button family, `GlassCard` and the other surfaces, `ListRow`,
+- **Components**: `AppScaffold` and the `AppBackground` it paints, the button family, `GlassCard` and the other surfaces, `ListRow`,
   `ChecklistRow`, `CodeDigits`, `GaugeRing`, `LockedLabel`, `QrView`, `SelectionSheet`, status
   signals, and a dependency-free `Shimmer` for skeletons.
 - **Screen header**: `ScreenHeader` and `LabelWithValue` — the way back, what the screen is and one
   value, on one row at the arrow's height, with the label marked as the screen's heading. The app
-  passes its own back widget, because how an app pops is the app's business.
+  passes its own back widget, because how an app pops is the app's business. `SliverScreenHeader`
+  pins it to the top of a `CustomScrollView`, painting `AppBackground` so the rows passing under it
+  disappear rather than showing through; over this gradient no flat colour can do that. It carries
+  the same constructors — `SliverScreenHeader(back:, label:)`, `.headline(back:, child:)` — plus
+  `.custom` for a header the kit did not write.
 - **Data displays**: `ProgressBar` (a comparison, not an indicator), `LevelBars` with a `.live`
   constructor that repaints from a `ValueListenable` without rebuilding, `StatTile` and
   `StatusDot`.

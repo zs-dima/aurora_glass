@@ -1,5 +1,6 @@
 import 'dart:ui' as ui show DisplayFeature, DisplayFeatureType;
 
+import 'package:aurora_glass/src/adaptive/content_pane.dart';
 import 'package:aurora_glass/src/adaptive/window_size_scope.dart';
 import 'package:aurora_glass/src/theme/tokens.dart';
 import 'package:flutter/foundation.dart' show precisionErrorTolerance;
@@ -92,11 +93,23 @@ class ListDetail extends StatelessWidget {
           gapWidth = AppSpacing.md;
         }
 
+        final detailWidth = constraints.maxWidth - paneWidth - gapWidth;
+
+        // Each pane says how wide it is, because a sliver inside one cannot measure itself: a
+        // `SliverContentPane` that fell back to the window would inset a 560 dp pane by the
+        // window's centring and leave 88 dp of content.
         return Row(
           children: <Widget>[
-            SizedBox(width: paneWidth, child: list),
+            SizedBox(
+              width: paneWidth,
+              child: PaneWidth(width: paneWidth, child: list),
+            ),
             SizedBox(width: gapWidth),
-            Expanded(child: twoPane ? (detail ?? const SizedBox.shrink()) : const SizedBox.shrink()),
+            Expanded(
+              child: twoPane
+                  ? PaneWidth(width: detailWidth, child: detail ?? const SizedBox.shrink())
+                  : const SizedBox.shrink(),
+            ),
           ],
         );
       },

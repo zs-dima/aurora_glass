@@ -1,6 +1,8 @@
 // The header and the label-value pair are one part: the pair exists because the header needed it,
 // and a card that carries the same pair imports both together.
 // ignore_for_file: prefer-single-widget-per-file
+import 'package:aurora_glass/src/adaptive/content_pane.dart';
+import 'package:aurora_glass/src/kit/app_background.dart';
 import 'package:aurora_glass/src/kit/signals.dart';
 import 'package:aurora_glass/src/kit/surfaces.dart';
 import 'package:aurora_glass/src/theme/tokens.dart';
@@ -78,10 +80,12 @@ class ScreenHeader extends StatelessWidget {
       trailingWidget = null,
       action = null;
 
+  /// {@template screen_header_label}
   /// The overline, upper-cased by [SectionLabel] as everywhere else.
   ///
   /// Null — or empty — renders the value alone, and no heading node at all: an empty
   /// `SectionLabel` is still a heading a screen reader announces, saying nothing.
+  /// {@endtemplate}
   final String? label;
 
   /// Optional right-hand value, already localized.
@@ -134,9 +138,17 @@ class ScreenHeader extends StatelessWidget {
         trailingWidget ??
         (trailing == null
             ? null
-            // [SectionLabel]'s metrics, one role dimmer and a shade lighter, so the two read as one
-            // optical line. Not upper-cased: a date is not a label, and "JAN 14" reads as shouting
-            // where "Jan 14" reads as a fact.
+            // [SectionLabel]'s metrics and [SectionLabel]'s role, so the two read as one optical
+            // line; the letter-spaced upper case is what separates them, not the colour. Not
+            // upper-cased: a date is not a label, and "JAN 14" reads as shouting where "Jan 14"
+            // reads as a fact.
+            //
+            // **`outline` was wrong here and the kit's own policy says why**: `color_contrast_test`
+            // excludes it on the grounds that "the muted tone never carries information", and this
+            // slot is nothing but information — a count, a date, a status. Measured on LeakSonar's
+            // dark palette it is 3.43:1 against the base gradient at 12 px, under AA, and it shows
+            // wherever the pair wraps and the value lands over the darkest corner instead of the
+            // glow.
             : Text(
                 trailing,
                 maxLines: 1,
@@ -144,7 +156,7 @@ class ScreenHeader extends StatelessWidget {
                 overflow: .ellipsis,
                 textAlign: .end,
                 style: base?.copyWith(
-                  color: theme.colorScheme.outline,
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: .w600,
                   letterSpacing: (base.fontSize ?? 12) * 0.14,
                 ),
@@ -171,6 +183,139 @@ class ScreenHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// [ScreenHeader] pinned to the top of a `CustomScrollView`, over the page's own background.
+///
+/// **The screen's name and its way back stop leaving on the first flick.** A header written as the
+/// first row of a list is gone after 48 px of scroll, and with it the arrow — which on gesture-nav
+/// Android and on iOS is the only visible way back there is (see [AppBackButton]).
+///
+/// [PinnedHeaderSliver] rather than a [SliverPersistentHeader]: a delegate has to declare
+/// `minExtent`/`maxExtent` as context-free getters, and this band is a MINIMUM
+/// ([AppTarget.tap]) that grows with the text scale and again when [LabelWithValue] wraps. A fixed
+/// extent would clip exactly the case the wrap exists for. This sliver takes the child's intrinsic
+/// height instead, and reports `maxScrollObstructionExtent`, so `ensureVisible` clears it.
+///
+/// **It paints [AppBackground], always, and that is what makes it invisible.** Rows have to be
+/// hidden as they pass under it, and over the page's gradient no flat colour can do that: the band
+/// swings 46 levels from edge to edge because the upper glow's centre falls inside it
+/// ([AppBackground] carries the measurement). The slice is laid out against the window and anchored
+/// to its top, where this sliver already sits, so it is pixel-identical to what it covers — which
+/// is also why there is no scroll listener and no cross-fade here. There is nothing to fade in.
+///
+/// **It carries [ScreenHeader]'s own constructors** rather than asking a call site to nest one
+/// inside it: `SliverScreenHeader(back: …, label: …)` and `SliverScreenHeader.headline(back: …,
+/// child: …)` read the way the unpinned versions do. `.custom` takes a header this kit did not
+/// write. A `.headline` is pinned like any other — a screen whose title IS the first thing it says
+/// keeps its way back on screen for the same reason a screen with an overline does. The pane under
+/// it passes `top: false`, or the status bar is counted twice.
+class SliverScreenHeader extends StatelessWidget {
+  /// Pins a [ScreenHeader] with these slots. The arguments are that constructor's.
+  const SliverScreenHeader({this.label, this.trailing, this.trailingWidget, this.action, this.back, super.key})
+    : _headline = null,
+      _custom = null;
+
+  /// Pins a [ScreenHeader.headline] with this child.
+  const SliverScreenHeader.headline({required Widget child, this.back, super.key})
+    : _headline = child,
+      _custom = null,
+      label = null,
+      trailing = null,
+      trailingWidget = null,
+      action = null;
+
+  /// Pins a header this kit did not write — a screen whose top row is its own widget.
+  ///
+  /// Home screens are the usual case: an app name beside the doors into settings and the inbox is
+  /// not a [ScreenHeader], and it is still the thing that must not scroll away.
+  const SliverScreenHeader.custom({required Widget child, super.key})
+    : _custom = child,
+      _headline = null,
+      back = null,
+      label = null,
+      trailing = null,
+      trailingWidget = null,
+      action = null;
+
+  /// How much of the band's trailing edge fades to transparent.
+  ///
+  /// The band is otherwise opaque, so a row scrolling out from under it disappears at a hard line;
+  /// this softens that line into the same few pixels a row's own edge-fade would use elsewhere,
+  /// instead of adding a scroll listener to cross-fade against content this widget cannot see.
+  static const double _edgeFade = 7;
+
+  /// {@macro screen_header_label}
+  final String? label;
+
+  /// Right-hand value, already localized.
+  final String? trailing;
+
+  /// Right-hand widget — a [StatusPill], a chip. Mutually exclusive with [trailing].
+  final Widget? trailingWidget;
+
+  /// Fixed-size control at the end of the row, which never stacks under the label.
+  final Widget? action;
+
+  /// The way back. Null draws no arrow and keeps the band.
+  final Widget? back;
+  final Widget? _headline;
+
+  final Widget? _custom;
+
+  @override
+  Widget build(BuildContext context) => PinnedHeaderSliver(
+    child: RepaintBoundary(
+      child: ShaderMask(
+        blendMode: .dstIn,
+        shaderCallback: (rect) => LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: const <Color>[Colors.white, Colors.transparent],
+          stops: <double>[(1 - _edgeFade / rect.height).clamp(0, 1), 1],
+        ).createShader(rect),
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: ClipRect(
+                child: OverflowBox(
+                  // The WINDOW's size, anchored to the leading corner it shares with the page, so the
+                  // gradient's stops and both glows land where the page puts them; the clip keeps only
+                  // this band. A background sized to the band would compress a 165° gradient into 48 px
+                  // and draw a different colour, and one sized to a `ListDetail` pane would put the
+                  // upper glow at the pane's edge instead of the window's.
+                  alignment: AlignmentDirectional.topStart,
+                  // The minimums go to zero rather than being inherited: a host that hands down a
+                  // `MediaQueryData()` it built itself reports a zero-size window, and a max below the
+                  // band's own tight minimum is a non-normalized constraint and an assertion.
+                  minWidth: 0,
+                  minHeight: 0,
+                  maxWidth: MediaQuery.widthOf(context),
+                  maxHeight: MediaQuery.heightOf(context),
+                  child: const AppBackground(),
+                ),
+              ),
+            ),
+            // The column, and the status bar. Never the gesture bar: this is the top of the window.
+            ContentPane(
+              bottom: false,
+              child:
+                  _custom ??
+                  (_headline == null
+                      ? ScreenHeader(
+                          label: label,
+                          trailing: trailing,
+                          trailingWidget: trailingWidget,
+                          action: action,
+                          back: back,
+                        )
+                      : ScreenHeader.headline(back: back, child: _headline)),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 /// An overline with a value beside it — and beneath it instead, once the two stop fitting.

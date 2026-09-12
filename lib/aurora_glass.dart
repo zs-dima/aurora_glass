@@ -8,6 +8,7 @@ export 'src/adaptive/window_size_scope.dart';
 export 'src/colors/colors.dart';
 export 'src/fonts/app_icons.dart';
 export 'src/fonts/typography.dart';
+export 'src/kit/app_background.dart';
 export 'src/kit/app_scaffold.dart';
 export 'src/kit/buttons.dart';
 export 'src/kit/checklist_row.dart';

@@ -164,6 +164,37 @@ void main() {
       expect(find.byType(CustomPaint), findsWidgets);
     });
 
+    testWidgets('**one rounded bar per value, bottom-aligned, and silence is a stub**', (tester) async {
+      // A composition assertion rather than a picture: what can go wrong here is the COUNT, the
+      // origin and the floor — bars growing from the top, a frame of silence painting nothing, a
+      // value dropped. A golden would catch all three and have to be re-blessed whenever the
+      // gradient moves; the canvas calls do not.
+      const height = 52.0;
+      await pump(
+        tester,
+        const SizedBox(
+          width: 240,
+          height: height,
+          child: LevelBars(values: <double>[0, 0.5, 1]),
+        ),
+      );
+
+      final painted = tester.renderObject(find.byType(CustomPaint).last);
+      expect(painted, paintsExactlyCountTimes(#drawRRect, 3), reason: 'one bar per value, no more');
+
+      // Every bar ends on the baseline, and the silent one is `minFraction` tall rather than
+      // nothing: a blank strip is indistinguishable from a meter that is not running.
+      expect(
+        painted,
+        // `paints` IS the matcher; the lint cannot see through a cascade.
+        // ignore: prefer-test-matchers
+        paints
+          ..rrect(rrect: _bar(0, 0))
+          ..rrect(rrect: _bar(1, 0.5))
+          ..rrect(rrect: _bar(2, 1)),
+      );
+    });
+
     testWidgets('the live constructor repaints from its listenable without rebuilding', (tester) async {
       final trail = ValueNotifier<List<double>>(List<double>.filled(3, 0));
       addTearDown(trail.dispose);
@@ -271,4 +302,21 @@ void main() {
       expect(fade.opacity.value, equals(1), reason: 'stopped at full, never mid-fade');
     });
   });
+}
+
+/// The bar `LevelBars` must draw for `level` at `index`, in a 240x52 strip of three.
+///
+/// The same arithmetic as the painter, deliberately: what this pins is the SHAPE — one bar per
+/// value, seven twelfths of the pitch wide, standing on the baseline, never shorter than
+/// `minFraction` — and restating it here is what makes a changed origin or a dropped value fail.
+RRect _bar(int index, double level) {
+  const strip = Size(240, 52);
+  const minFraction = 0.08;
+  final pitch = strip.width / 3;
+  final width = pitch * 7 / 12;
+  final bar = strip.height * (minFraction + (1 - minFraction) * level);
+
+  final rect = Rect.fromLTWH(index * pitch + (pitch - width) / 2, strip.height - bar, width, bar);
+
+  return .fromRectAndRadius(rect, const .circular(3));
 }
