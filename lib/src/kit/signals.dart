@@ -1,5 +1,6 @@
 // One file per kit category.
 // ignore_for_file: prefer-single-widget-per-file
+import 'package:aurora_glass/src/kit/data_displays.dart';
 import 'package:aurora_glass/src/theme/tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -35,7 +36,13 @@ enum AppTone {
 /// The optional [pulse] dot is ambient motion and stops under Reduce Motion.
 class StatusPill extends StatelessWidget {
   /// Creates a [StatusPill].
-  const StatusPill({required this.label, this.tone = AppTone.accent, this.pulse = false, super.key});
+  const StatusPill({
+    required this.label,
+    this.tone = AppTone.accent,
+    this.pulse = false,
+    this.maxLines,
+    super.key,
+  });
 
   /// Chip text, rendered upper-case.
   final String label;
@@ -45,6 +52,14 @@ class StatusPill extends StatelessWidget {
 
   /// Whether to show the live dot.
   final bool pulse;
+
+  /// Cap on rendered lines; the label ellipsizes past it. Null lets it wrap freely, as before.
+  ///
+  /// A status word has no space to wrap at, so a pill that outgrows its row breaks MID-WORD.
+  /// That is only visible where the pill shares a row — on a header line beside a back arrow and a
+  /// trailing value — and there the second line pushes the row's height out. Callers in that
+  /// position pass 1, as they do for [SectionLabel].
+  final int? maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +84,7 @@ class StatusPill extends StatelessWidget {
           mainAxisSize: .min,
           children: <Widget>[
             if (pulse) ...<Widget>[
-              _Dot(color: color, animate: AppMotion.ambientEnabled(context)),
+              StatusDot(tone: tone, size: 8, pulse: true, glow: false),
               const SizedBox(width: 6),
             ] else ...<Widget>[
               Icon(tone.icon, size: 14, color: color),
@@ -78,6 +93,8 @@ class StatusPill extends StatelessWidget {
             Flexible(
               child: Text(
                 label.toUpperCase(),
+                maxLines: maxLines,
+                overflow: maxLines == null ? null : .ellipsis,
                 style: labelStyle?.copyWith(
                   color: color,
                   fontWeight: .w700,
@@ -119,62 +136,6 @@ class IconBadge extends StatelessWidget {
   );
 }
 
-class _Dot extends StatefulWidget {
-  const _Dot({required this.color, required this.animate});
-
-  final Color color;
-  final bool animate;
-
-  @override
-  State<_Dot> createState() => _DotState();
-}
-
-class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 2400),
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.animate) _controller.repeat(reverse: true);
-  }
-
-  @override
-  void didUpdateWidget(covariant _Dot oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Reduce Motion can be toggled while the app is open.
-    if (widget.animate && !_controller.isAnimating) {
-      _controller.repeat(reverse: true);
-    } else if (!widget.animate && _controller.isAnimating) {
-      _controller
-        ..stop()
-        ..value = 1;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => RepaintBoundary(
-    // Its own layer: the ticker runs while the pill is on screen, inside a card with a 50 px shadow.
-    child: FadeTransition(
-      opacity: widget.animate ? _controller.drive(Tween<double>(begin: 0.35, end: 1)) : const AlwaysStoppedAnimation(1),
-      child: SizedBox.square(
-        dimension: 8,
-        child: DecoratedBox(
-          decoration: BoxDecoration(color: widget.color, shape: .circle),
-        ),
-      ),
-    ),
-  );
-}
-
 /// An inline banner for a state the user must see without a modal getting in the way.
 class InfoBanner extends StatelessWidget {
   /// Creates an [InfoBanner].
@@ -196,26 +157,83 @@ class InfoBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final color = tone.on(scheme);
-    return Container(
-      padding: const .all(AppSpacing.sm),
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.07),
         borderRadius: AppShape.row,
         border: .all(color: color.withValues(alpha: 0.25)),
       ),
-      child: Row(
-        children: <Widget>[
-          Icon(tone.icon, size: 20, color: color),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text(message, style: Theme.of(context).textTheme.bodyMedium)),
-          if (action case final String label)
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(foregroundColor: color, minimumSize: const Size(0, AppTarget.tap)),
-              child: Text(label),
+      child: Padding(
+        padding: const .symmetric(horizontal: AppSpacing.sm, vertical: 3),
+        child: Row(
+          crossAxisAlignment: .center,
+          spacing: AppSpacing.sm,
+          children: <Widget>[
+            // const SizedBox(width: AppSpacing.sm),
+            Padding(
+              padding: const .only(bottom: AppSpacing.sm, top: AppSpacing.sm),
+              child: Icon(tone.icon, size: 20, color: color),
             ),
-        ],
+            // **The action drops UNDER the message instead of squeezing it.** It was a bare
+            // `TextButton` beside an `Expanded`: an unconstrained child next to a flexible one, so
+            // at 2.0× in a long language the button kept its natural width, the message shrank to
+            // nothing, and the row overflowed anyway — one app grew a private wrapper widget for the
+            // sole purpose of avoiding this banner (2026-09-12).
+            //
+            // The choice is made on the SCALER and not by measuring, the same rule and the same
+            // threshold [LabelWithValue] uses: cheap, deterministic, and it cannot depend on which
+            // language happened to be on screen when somebody looked.
+            Expanded(
+              child: switch ((action, MediaQuery.textScalerOf(context).scale(1) > _kBannerOneRowScale)) {
+                (null, _) => Text(message, style: Theme.of(context).textTheme.bodyMedium),
+                (final String label, true) => Column(
+                  crossAxisAlignment: .start,
+                  children: <Widget>[
+                    Text(message, style: Theme.of(context).textTheme.bodyMedium),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: _BannerAction(label: label, color: color, onPressed: onAction),
+                    ),
+                  ],
+                ),
+                (final String label, false) => Row(
+                  children: <Widget>[
+                    Expanded(child: Text(message, style: Theme.of(context).textTheme.bodyMedium)),
+                    _BannerAction(label: label, color: color, onPressed: onAction),
+                  ],
+                ),
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+
+/// An [InfoBanner]'s action, which is a [TextButton] with the banner's tone and a real tap target.
+class _BannerAction extends StatelessWidget {
+  const _BannerAction({required this.label, required this.color, required this.onPressed});
+
+  final String label;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+    onPressed: onPressed,
+    style: TextButton.styleFrom(
+      foregroundColor: color,
+      // tapTargetSize: .shrinkWrap,
+      minimumSize: const Size(0, AppTarget.tap),
+      padding: const .symmetric(horizontal: AppSpacing.sm),
+    ),
+    child: Text(label, maxLines: 2, textAlign: .center),
+  );
+}
+
+/// The largest text scale a banner's message and its action still fit on one row at.
+///
+/// The same 1.3 [LabelWithValue] uses, measured the same way: at 2.0× on a 320 dp phone a Russian
+/// message beside an action wants about 55 px more than the row has.
+const double _kBannerOneRowScale = 1.3;

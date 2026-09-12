@@ -1,4 +1,5 @@
 import 'package:aurora_glass/src/adaptive/window_size.dart';
+import 'package:aurora_glass/src/adaptive/window_size_scope.dart';
 import 'package:aurora_glass/src/fonts/typography.dart';
 import 'package:aurora_glass/src/theme/app_palette.dart';
 import 'package:aurora_glass/src/theme/brand.dart';
@@ -22,6 +23,32 @@ abstract final class AppTheme {
   /// hot reload, so hot restart after editing a token.
   static ThemeData resolve(Brightness brightness, WindowClass windowClass, AppPalette palette) =>
       _cache[(brightness, windowClass, palette)] ??= _build(brightness, windowClass, palette);
+
+  /// **A light theme for a subtree inside a dark app: a document preview, a printable page.**
+  ///
+  /// A report that will be printed on white paper has to be previewed on white paper, in both
+  /// themes — a dark preview of a light document is a preview of something else. The naive way is
+  /// `Theme(data: AppTheme.resolve(.light, …))`, and it drops two things:
+  ///
+  /// * the ambient FONT. `resolve` deliberately sets no font family, so the platform's system font
+  ///   applies — and a host that loaded its own (a screenshot harness, a test binding, an app with
+  ///   a brand face) loses it inside the subtree, which is a preview in the wrong typeface.
+  /// * nothing resets `DefaultTextStyle`. A [Theme] rebinds `Theme.of`, and text with no explicit
+  ///   style still inherits the dark `MaterialApp`'s default — dark ink on white paper. Wrap the
+  ///   subtree in a `Material(type: MaterialType.transparency)`, which re-derives it from this.
+  ///
+  /// [windowClass] comes from the CONTEXT, so a preview on a tablet gets the tablet's metrics.
+  static ThemeData paper(BuildContext context, AppPalette palette, {Brightness brightness = .light}) {
+    final ambient = Theme.of(context).textTheme;
+    final light = resolve(brightness, WindowSizeScope.classOf(context), palette);
+
+    return light.copyWith(
+      textTheme: light.textTheme.apply(
+        fontFamily: ambient.bodyMedium?.fontFamily,
+        fontFamilyFallback: ambient.bodyMedium?.fontFamilyFallback,
+      ),
+    );
+  }
 
   static ThemeData _build(Brightness brightness, WindowClass windowClass, AppPalette palette) {
     final scheme = palette.schemeOf(brightness);

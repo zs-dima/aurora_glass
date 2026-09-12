@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:aurora_glass/aurora_glass.dart';
 import 'package:flutter/material.dart';
 
@@ -71,6 +73,58 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
                       onAction: () {},
                     ),
                   ),
+
+                const _Section('Headers: one row, at the back arrow height'),
+                const ScreenHeader(label: 'Screen header', trailing: 'Aug 29', back: BackButton()),
+                const ScreenHeader(
+                  label: 'With a widget value',
+                  trailingWidget: StatusPill(label: 'rec', tone: .alert, pulse: true, maxLines: 1),
+                  back: BackButton(),
+                ),
+                const ScreenHeader(label: 'With an action', action: GaugeRing(size: 28), back: BackButton()),
+                const ScreenHeader(back: BackButton()),
+                const ScreenHeader(label: 'No way back — the band keeps its height'),
+
+                const _Section('Data displays'),
+                const ProgressBar(value: 0.28),
+                const SizedBox(height: AppSpacing.xs),
+                const ProgressBar(value: 0.82),
+                const SizedBox(height: AppSpacing.xs),
+                const ProgressBar(value: 0.82, emphasis: .featured, height: 9),
+                const SizedBox(height: AppSpacing.sm),
+                LevelBars(
+                  // Generated rather than written out: a hand-typed trail of 25 levels is a list
+                  // of repeated numbers, and what the part is for is a SHAPE.
+                  values: <double>[for (var i = 0; i < 25; i++) (math.sin(i / 3) + 1) / 2 * (1 - i / 40)],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const Row(
+                  spacing: AppSpacing.xs,
+                  children: <Widget>[
+                    Expanded(
+                      child: StatTile(label: 'Background', value: 'Quiet', tone: .ok),
+                    ),
+                    Expanded(
+                      child: StatTile(label: 'Now', value: 'Recording', tone: .accent, live: true),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const Row(
+                  spacing: AppSpacing.xs,
+                  children: <Widget>[
+                    StatusDot(),
+                    StatusDot(tone: .ok),
+                    StatusDot(tone: .alert),
+                    StatusDot(tone: .accent, pulse: true),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const GradientBorderCard(
+                  radius: AppRadius.row,
+                  glow: true,
+                  child: Text('GradientBorderCard: the row radius, with the glow'),
+                ),
 
                 const _Section('Every data view: empty / loading / error'),
                 const GlassCard(child: Center(child: Text('Empty: nothing here yet'))),

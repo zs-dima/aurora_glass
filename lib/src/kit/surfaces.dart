@@ -50,6 +50,8 @@ class GradientBorderCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.md),
     this.onTap,
+    this.radius = AppRadius.card,
+    this.glow = false,
     super.key,
   });
 
@@ -62,23 +64,41 @@ class GradientBorderCard extends StatelessWidget {
   /// Makes the whole card tappable.
   final VoidCallback? onTap;
 
+  /// The outer corner. The inner one follows the nesting rule, `inner = outer − border`.
+  ///
+  /// A card is the default, and a ROW is the other case this shape is used for: one item in a list
+  /// drawn with the gradient border to say it is the one that matters. A 24 pt corner on a 56 pt
+  /// row reads as a lozenge, not as a row.
+  final Radius radius;
+
+  /// Whether the card casts the brand glow.
+  ///
+  /// Off by default, which is every card that has ever used this: a screen full of glowing cards
+  /// has no focal point. On for the ONE element a screen is about.
+  final bool glow;
+
   @override
   Widget build(BuildContext context) {
     final brand = Brand.of(context);
+    // The border is 2 px on every side, so the inner radius is 2 less — nested corners never share
+    // a radius, or the border reads as thicker at the corners than along the edges.
+    final inner = BorderRadius.all(.circular(radius.x - 2));
+
     return DecoratedBox(
-      decoration: BoxDecoration(gradient: brand.cta, borderRadius: AppShape.card),
+      decoration: BoxDecoration(
+        gradient: brand.cta,
+        borderRadius: .all(radius),
+        boxShadow: glow ? <BoxShadow>[BoxShadow(color: brand.pairStart.withValues(alpha: 0.2), blurRadius: 36)] : null,
+      ),
       child: Padding(
         padding: const .all(2),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: brand.gradientCardInner,
-            borderRadius: const .all(.circular(22)),
-          ),
+          decoration: BoxDecoration(color: brand.gradientCardInner, borderRadius: inner),
           child: Material(
             type: .transparency,
             child: InkWell(
               onTap: onTap,
-              borderRadius: const .all(.circular(22)),
+              borderRadius: inner,
               child: Padding(padding: padding, child: child),
             ),
           ),
@@ -214,7 +234,7 @@ class SectionLabel extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       maxLines: maxLines,
-      overflow: maxLines == null ? null : TextOverflow.ellipsis,
+      overflow: maxLines == null ? null : .ellipsis,
       style: base?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
         fontWeight: .w700,

@@ -97,6 +97,33 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('a status word too wide for its row is capped, not broken in half', (tester) async {
+      // One word has no space to wrap at, so it breaks between letters — and on a header row,
+      // beside an arrow and a value, the second line pushes the row's height out.
+      Future<double> pillHeight({int? maxLines}) async {
+        await pumpNarrow(
+          tester,
+          // A bounded box, which is the only place `maxLines` can bite: unconstrained, the pill
+          // lays out at its natural width and never reaches a second line at all.
+          SizedBox(
+            width: 120,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: StatusPill(label: 'Подключено', maxLines: maxLines),
+            ),
+          ),
+          textScale: 2.0,
+        );
+        return tester.getSize(find.byType(StatusPill)).height;
+      }
+
+      final broken = await pillHeight();
+      final capped = await pillHeight(maxLines: 1);
+
+      expect(tester.takeException(), isNull);
+      expect(capped, lessThan(broken), reason: 'without the cap the word takes two lines');
+    });
   });
 
   group('ListRow', () {

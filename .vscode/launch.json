@@ -7,7 +7,7 @@
       "name": "Gallery",
       "request": "launch",
       "type": "dart",
-      "program": "example/lib/main.dart",
+      "program": "lib/main.dart",
       "cwd": "${workspaceFolder}/example",
       "console": "debugConsole"
     },
@@ -15,7 +15,7 @@
       "name": "Gallery (Windows)",
       "request": "launch",
       "type": "dart",
-      "program": "example/lib/main.dart",
+      "program": "lib/main.dart",
       "cwd": "${workspaceFolder}/example",
       "deviceId": "windows",
       "console": "debugConsole"
@@ -24,7 +24,7 @@
       "name": "Gallery (Chrome)",
       "request": "launch",
       "type": "dart",
-      "program": "example/lib/main.dart",
+      "program": "lib/main.dart",
       "cwd": "${workspaceFolder}/example",
       "deviceId": "chrome",
       "console": "debugConsole"
@@ -35,7 +35,9 @@
       "type": "dart",
       "program": "test/",
       "console": "debugConsole",
-      "args": ["--reporter=expanded"]
+      "args": [
+        "--reporter=expanded"
+      ]
     }
   ]
 }

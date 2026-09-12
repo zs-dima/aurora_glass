@@ -79,6 +79,12 @@ ink on the CTA gradient, are hand-written in the app; they live only in each boa
 - **Components**: `AppScaffold`, the button family, `GlassCard` and the other surfaces, `ListRow`,
   `ChecklistRow`, `CodeDigits`, `GaugeRing`, `LockedLabel`, `QrView`, `SelectionSheet`, status
   signals, and a dependency-free `Shimmer` for skeletons.
+- **Screen header**: `ScreenHeader` and `LabelWithValue` — the way back, what the screen is and one
+  value, on one row at the arrow's height, with the label marked as the screen's heading. The app
+  passes its own back widget, because how an app pops is the app's business.
+- **Data displays**: `ProgressBar` (a comparison, not an indicator), `LevelBars` with a `.live`
+  constructor that repaints from a `ValueListenable` without rebuilding, `StatTile` and
+  `StatusDot`.
 - **Icons**: one icon font. An app's own glyphs belong in its own family.
 
 ## The gallery
